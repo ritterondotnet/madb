@@ -11,7 +11,8 @@ namespace SharpAdbClient.Tests
         {
             // Tests the path to the /storage/emulated/legacy folder on a Nexus 10 device.
             var device = this.GetFirstDevice();
-            FileListingService fileListingService = new FileListingService(device);
+            FileSystem fileSystem = new FileSystem(device);
+            FileListingService fileListingService = new FileListingService(fileSystem);
 
             // Make sure the /storage/ folder is resolved correctly. It is not a symlink, but it may
             // contain symlinks - e.g. /storage/sdcard.

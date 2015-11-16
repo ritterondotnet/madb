@@ -648,9 +648,9 @@ namespace SharpAdbClient
         /// Runs the event log service.
         /// </summary>
         /// <param name="receiver">The receiver.</param>
-        public void RunEventLogService(LogReceiver receiver)
+        public void RunEventLogService()
         {
-            AdbClient.Instance.RunEventLogService(this.DeviceData, receiver);
+            AdbClient.Instance.RunEventLogService(this.DeviceData);
         }
 
         /// <summary>
@@ -658,9 +658,9 @@ namespace SharpAdbClient
         /// </summary>
         /// <param name="logname">The logname.</param>
         /// <param name="receiver">The receiver.</param>
-        public void RunLogService(string logname, LogReceiver receiver)
+        public void RunLogService(string logname)
         {
-            AdbClient.Instance.RunLogService(this.DeviceData, logname, receiver);
+            AdbClient.Instance.RunLogService(this.DeviceData, logname);
         }
 
         /// <summary>

@@ -12,7 +12,8 @@ namespace SharpAdbClient.Tests {
         [TestCategory("IntegrationTest")]
 		public void FindEntryTest ( ) {
 			Device device = GetFirstDevice ( );
-            FileListingService fileListingService = new FileListingService(device);
+            FileSystem fileSystem = new FileSystem(device);
+            FileListingService fileListingService = new FileListingService(fileSystem);
 
 			FileEntry fe = FileEntry.Find ( device, fileListingService, "/system/" );
 
@@ -29,8 +30,8 @@ namespace SharpAdbClient.Tests {
         [TestCategory("IntegrationTest")]
 		public void FindOrCreateTest( ) {
 			Device device = GetFirstDevice ( );
-            FileListingService fileListingService = new FileListingService(device);
             FileSystem fileSystem = new FileSystem(device);
+            FileListingService fileListingService = new FileListingService(fileSystem);
 
             var path ="/mnt/sdcard/test/delete/";
 			FileEntry fe = FileEntry.FindOrCreate ( device, fileListingService, path );

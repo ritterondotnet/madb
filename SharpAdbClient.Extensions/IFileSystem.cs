@@ -10,6 +10,8 @@ namespace SharpAdbClient
 {
     public interface IFileSystem
     {
+        IDevice Device { get; }
+
         IEnumerable<FileEntry> DeviceBlocks { get; }
 
         void Chmod(string path, string permissions);

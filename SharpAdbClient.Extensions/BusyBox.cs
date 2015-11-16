@@ -32,7 +32,7 @@ namespace SharpAdbClient {
 		public BusyBox ( IDevice device ) {
 			this.Device = device;
             this.fileSystem = new FileSystem(this.Device);
-            this.fileListingService = new FileListingService(this.Device);
+            this.fileListingService = new FileListingService(this.fileSystem);
 			Version = new System.Version ( "0.0.0.0" );
 			Commands = new List<String> ( );
 			CheckForBusyBox ( );

@@ -60,7 +60,7 @@ namespace SharpAdbClient {
 		/// <param name="package">The package.</param>
 		/// <returns></returns>
 		public FileEntry GetApkFileEntry ( String package ) {
-			return FileEntry.Find ( this.Device, new FileListingService(Device), GetApkPath ( package ) );
+			return FileEntry.Find ( this.Device, new FileListingService(new FileSystem(Device)), GetApkPath ( package ) );
 		}
 
 		/// <summary>

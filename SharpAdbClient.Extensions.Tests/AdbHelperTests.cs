@@ -18,7 +18,8 @@ namespace SharpAdbClient.Extensions.Tests
         public void FileListingServiceTest()
         {
             Device device = GetFirstDevice();
-            FileListingService fileListingService = new FileListingService(device);
+            FileSystem fileSystem = new FileSystem(device);
+            FileListingService fileListingService = new FileListingService(fileSystem);
 
             FileEntry[] entries = fileListingService.GetChildren(fileListingService.Root, false, null);
             foreach (var item in entries)

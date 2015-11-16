@@ -20,7 +20,7 @@ namespace SharpAdbClient
         public FileSystem(IDevice device)
         {
             Device = device;
-            this.fileListingService = new FileListingService(device);
+            this.fileListingService = new FileListingService(this);
         }
 
         /// <summary>
@@ -126,7 +126,7 @@ namespace SharpAdbClient
         /// <value>
         /// The device.
         /// </value>
-        private IDevice Device { get; set; }
+        public IDevice Device { get; private set; }
 
         /// <summary>
         /// Makes the directory from the specified path.

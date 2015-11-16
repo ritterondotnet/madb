@@ -14,7 +14,7 @@ namespace SharpAdbClient
     /// </summary>
     public class FileEntry
     {
-        private FileSystem fileSystem;
+        private IFileSystem fileSystem;
 
         /// <summary>
         /// Finds the file entry, or creates an empty FileEntry if it does not exist.
@@ -88,7 +88,7 @@ namespace SharpAdbClient
         /// <param name="name">name of the entry.</param>
         /// <param name="type">entry type.</param>
         /// <param name="isRoot">if set to <see langword="true"/> [is root].</param>
-        public FileEntry(FileSystem fileSystem, FileEntry parent, String name, FileListingService.FileTypes type, bool isRoot)
+        public FileEntry(IFileSystem fileSystem, FileEntry parent, String name, FileListingService.FileTypes type, bool isRoot)
         {
             this.FetchTime = 0;
             this.Parent = parent;

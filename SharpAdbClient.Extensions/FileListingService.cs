@@ -169,16 +169,16 @@ namespace SharpAdbClient {
 		/// </summary>
 		private FileEntry _root = null;
 
-        private FileSystem fileSystem;
+        private IFileSystem fileSystem;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="FileListingService"/> class.
 		/// </summary>
 		/// <param name="device">The device.</param>
-		public FileListingService ( IDevice device )
+		public FileListingService ( IFileSystem fileSystem )
         {
-            this.Device = device;
-            this.fileSystem = new FileSystem(this.Device);
+            this.Device = fileSystem.Device;
+            this.fileSystem = fileSystem;
             this.Threads = new List<Thread>();
         }
 
