@@ -99,6 +99,7 @@ namespace SharpAdbClient
             CheckAppPackageStatus();
             this.Exists = true;
             this.fileSystem = fileSystem;
+            this.Device = fileSystem.Device;
         }
 
         /// <summary>
