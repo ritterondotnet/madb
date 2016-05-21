@@ -118,10 +118,8 @@
     <Compile Include="AdbServer.cs" />
     <Compile Include="AdbSocket.cs" />
     <Compile Include="DeviceCommands\AndroidProcess.cs" />
-    <Compile Include="DeviceCommands\AndroidProcessHeader.cs" />
     <Compile Include="DeviceCommands\AndroidProcessState.cs" />
     <Compile Include="DeviceCommands\InfoReceiver.cs" />
-    <Compile Include="DeviceCommands\ProcessOutputReceiver.cs" />
     <Compile Include="DeviceCommands\VersionInfo.cs" />
     <Compile Include="DeviceCommands\VersionInfoReceiver.cs" />
     <Compile Include="Factories.cs" />
@@ -145,9 +143,13 @@
     <Compile Include="Extensions\StringHelper.cs" />
     <Compile Include="FileStatistics.cs" />
     <Compile Include="ForwardData.cs" />
+    <Compile Include="ForwardProtocol.cs" />
+    <Compile Include="ForwardSpec.cs" />
     <Compile Include="FramebufferHeader.cs" />
     <Compile Include="IAdbClient.cs" />
     <Compile Include="IAdbCommandLineClient.cs" />
+    <Compile Include="AdbCommandLineClientExtensions.cs" />
+    <Compile Include="IAdbServer.cs" />
     <Compile Include="IAdbSocket.cs" />
     <Compile Include="IDeviceMonitor.cs" />
     <Compile Include="ITcpSocket.cs" />
@@ -174,6 +176,7 @@
     <Compile Include="Receivers\MultilineReceiver.cs" />
     <Compile Include="Receivers\NamespaceDoc.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Receivers\ProcessOutputReceiver.cs" />
     <Compile Include="SocketExtensions.cs" />
     <Compile Include="StartServerResult.cs" />
     <Compile Include="SyncCommand.cs" />
@@ -208,9 +211,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="IAdbClient.xml">
-      <SubType>Designer</SubType>
-    </Content>
-    <Content Include="IAdbSocket.xml">
       <SubType>Designer</SubType>
     </Content>
     <Content Include="IDeviceMonitor.xml" />

@@ -7,8 +7,10 @@ namespace SharpAdbClient
     using Mono.Unix;
     using SharpAdbClient.Exceptions;
     using System;
+    using System.IO;
     using System.Net;
     using System.Net.Sockets;
+    using System.Threading;
 
     /// <summary>
     /// <para>
@@ -23,7 +25,7 @@ namespace SharpAdbClient
     /// between clients and devices.
     /// </para>
     /// </summary>
-    public static class AdbServer
+    public class AdbServer : IAdbServer
     {
         /// <summary>
         /// The port at which the Android Debug Bridge server listens by default.
@@ -47,77 +49,83 @@ namespace SharpAdbClient
         internal const int ConnectionRefused = 10061;
 
         /// <summary>
+        /// The error code that is returned by the <see cref="SocketException"/> when the connection was reset by the peer.
+        /// </summary>
+        /// <remarks>
+        /// An existing connection was forcibly closed by the remote host. This normally results if the peer application on the
+        /// remote host is suddenly stopped, the host is rebooted, the host or remote network interface is disabled, or the remote
+        /// host uses a hard close. This error may also result if a connection was broken due to keep-alive activity detecting
+        /// a failure while one or more operations are in progress.
+        /// </remarks>
+        /// <seealso href="https://msdn.microsoft.com/en-us/library/ms740668.aspx"/>
+        internal const int ConnectionReset = 10054;
+
+        /// <summary>
         /// The tag to use when logging.
         /// </summary>
         private const string Tag = nameof(AdbServer);
 
-        static AdbServer()
+        /// <summary>
+        /// A lock used to ensure only one caller at a time can attempt to restart adb.
+        /// </summary>
+        private static readonly object RestartLock = new object();
+
+        /// <summary>
+        /// The path to the adb server. Cached from calls to <see cref="StartServer(string, bool)"/>. Used when restarting
+        /// the server to figure out where adb is located.
+        /// </summary>
+        private static string cachedAdbPath;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AdbServer"/> class.
+        /// </summary>
+        public AdbServer()
+            : this(new IPEndPoint(IPAddress.Loopback, AdbServerPort))
         {
-            switch (Environment.OSVersion.Platform)
-            {
-                case PlatformID.Win32NT:
-                    EndPoint = new IPEndPoint(IPAddress.Loopback, AdbServerPort);
-                    break;
-
-                case PlatformID.MacOSX:
-                case PlatformID.Unix:
-                    EndPoint = new UnixEndPoint($"/tmp/{AdbServerPort}");
-                    break;
-
-                default:
-                    throw new InvalidOperationException("Only Windows, Linux and Mac OS X are supported");
-            }
         }
 
         /// <summary>
-        /// Gets the <see cref="IPEndPoint"/> at which the Android Debug Bridge server is listening..
+        /// Initializes a new instance of the <see cref="AdbServer"/> class, and the specific <see cref="EndPoint"/> at which
+        /// the server should be listening.
         /// </summary>
-        public static EndPoint EndPoint { get; private set; }
+        /// <param name="endPoint">
+        /// The <see cref="EndPoint"/> at which the server should be listening.
+        /// </param>
+        public AdbServer(EndPoint endPoint)
+        {
+            if (endPoint == null)
+            {
+                throw new ArgumentNullException(nameof(endPoint));
+            }
+
+            if (!(endPoint is IPEndPoint || endPoint is DnsEndPoint || endPoint is UnixEndPoint))
+            {
+                throw new NotSupportedException("Only TCP and Unix endpoints are supported");
+            }
+
+            this.EndPoint = endPoint;
+        }
 
         /// <summary>
-        /// Starts the adb server if it was not previously running.
+        /// Gets or sets the default instance of the <see cref="IAdbServer"/> interface.
         /// </summary>
-        /// <param name="adbPath">
-        /// The path to the <c>adb.exe</c> executable that can be used to start the adb server.
-        /// If this path is not provided, this method will throw an exception if the server
-        /// is not running or is not up to date.
-        /// </param>
-        /// <param name="restartServerIfNewer">
-        /// <see langword="true"/> to restart the adb server if the version of the <c>adb.exe</c>
-        /// executable at <paramref name="adbPath"/> is newer than the version that is currently
-        /// running; <see langword="false"/> to keep a previous version of the server running.
-        /// </param>
-        /// <returns>
-        /// <list type="ordered">
-        /// <item>
-        ///     <see cref="StartServerResult.AlreadyRunning"/> if the adb server was already
-        ///     running and the version of the adb server was at least <see cref="RequiredAdbVersion"/>.
-        /// </item>
-        /// <item>
-        ///     <see cref="StartServerResult.RestartedOutdatedDaemon"/> if the adb server
-        ///     was already running, but the version was less than <see cref="RequiredAdbVersion"/>
-        ///     or less than the version of the adb client at <paramref name="adbPath"/> and the
-        ///     <paramref name="restartServerIfNewer"/> flag was set.
-        /// </item>
-        /// <item>
-        /// </item>
-        ///     <see cref="StartServerResult.Started"/> if the adb server was not running,
-        ///     and the server was started.
-        /// </list>
-        /// </returns>
-        /// <exception cref="AdbException">
-        /// The server was not running, or an outdated version of the server was running,
-        /// and the <paramref name="adbPath"/> parameter was not specified.
-        /// </exception>
-        public static StartServerResult StartServer(string adbPath, bool restartServerIfNewer)
+        public static IAdbServer Instance
+        { get; set; } = new AdbServer();
+
+        /// <inheritdoc/>
+        public EndPoint EndPoint { get; private set; }
+
+        /// <inheritdoc/>
+        public StartServerResult StartServer(string adbPath, bool restartServerIfNewer)
         {
-            var serverStatus = GetStatus();
+            var serverStatus = this.GetStatus();
             Version commandLineVersion = null;
 
             var commandLineClient = Factories.AdbCommandLineClientFactory(adbPath);
 
-            if (adbPath != null)
+            if (commandLineClient.IsValidAdbFile(adbPath))
             {
+                cachedAdbPath = adbPath;
                 commandLineVersion = commandLineClient.GetVersion();
             }
 
@@ -172,14 +180,22 @@ namespace SharpAdbClient
             }
         }
 
-        /// <summary>
-        /// Gets the status of the adb server.
-        /// </summary>
-        /// <returns>
-        /// A <see cref="AdbServerStatus"/> object that describes the status of the
-        /// adb server.
-        /// </returns>
-        public static AdbServerStatus GetStatus()
+        /// <inheritdoc/>
+        public void RestartServer()
+        {
+            if (!File.Exists(cachedAdbPath))
+            {
+                throw new InvalidOperationException($"The adb server was not started via {nameof(AdbServer)}.{nameof(this.StartServer)} or no path to adb was specified. The adb server cannot be restarted.");
+            }
+
+            lock (RestartLock)
+            {
+                this.StartServer(cachedAdbPath, false);
+            }
+        }
+
+        /// <inheritdoc/>
+        public AdbServerStatus GetStatus()
         {
             // Try to connect to a running instance of the adb server
             try
@@ -194,7 +210,7 @@ namespace SharpAdbClient
             }
             catch (SocketException ex)
             {
-                if (ex.ErrorCode == ConnectionRefused)
+                if (ex.SocketErrorCode == SocketError.ConnectionRefused)
                 {
                     return new AdbServerStatus()
                     {

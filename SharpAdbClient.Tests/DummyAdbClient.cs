@@ -23,32 +23,37 @@ namespace SharpAdbClient.Tests
             throw new NotImplementedException();
         }
 
+        public void CreateForward(DeviceData device, ForwardSpec local, ForwardSpec remote, bool allowRebind)
+        {
+            throw new NotImplementedException();
+        }
+
         public void CreateForward(DeviceData device, string local, string remote, bool allowRebind)
         {
             throw new NotImplementedException();
         }
 
-        public Task ExecuteRemoteCommand(string command, DeviceData device, IShellOutputReceiver rcvr, CancellationToken cancellationToken, int maxTimeToOutputResponse)
+        public Task ExecuteRemoteCommandAsync(string command, DeviceData device, IShellOutputReceiver receiver, CancellationToken cancellationToken, int maxTimeToOutputResponse)
         {
             this.ReceivedCommands.Add(command);
 
             if (this.Commands.ContainsKey(command))
             {
-                if (rcvr != null)
+                if (receiver != null)
                 {
                     StringReader reader = new StringReader(this.Commands[command]);
 
                     while (reader.Peek() != -1)
                     {
-                        rcvr.AddOutput(reader.ReadLine());
+                        receiver.AddOutput(reader.ReadLine());
                     }
 
-                    rcvr.Flush();
+                    receiver.Flush();
                 }
             }
             else
             {
-                throw new ArgumentOutOfRangeException(nameof(command));
+                throw new ArgumentOutOfRangeException(nameof(command), $"The command '{command}' was unexpected");
             }
 
             return Task.FromResult(true);
@@ -64,7 +69,7 @@ namespace SharpAdbClient.Tests
             throw new NotImplementedException();
         }
 
-        public Task<Image> GetFrameBuffer(DeviceData device, CancellationToken cancellationToken)
+        public Task<Image> GetFrameBufferAsync(DeviceData device, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

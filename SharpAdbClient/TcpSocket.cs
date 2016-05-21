@@ -9,6 +9,7 @@ namespace SharpAdbClient
     using System.IO;
     using System.Net;
     using System.Net.Sockets;
+    using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -18,26 +19,13 @@ namespace SharpAdbClient
     public class TcpSocket : ITcpSocket
     {
         private Socket socket;
+        private EndPoint endPoint;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TcpSocket"/> class.
         /// </summary>
         public TcpSocket()
         {
-            switch (Environment.OSVersion.Platform)
-            {
-                case PlatformID.Win32NT:
-                    this.socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                    break;
-
-                case PlatformID.Unix:
-                case PlatformID.MacOSX:
-                    this.socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.IP);
-                    break;
-
-                default:
-                    throw new NotSupportedException("Only Windows, Linux and Mac OS are supported");
-            }
         }
 
         /// <inheritdoc/>
@@ -66,8 +54,23 @@ namespace SharpAdbClient
         /// <inheritdoc/>
         public void Connect(EndPoint endPoint)
         {
+            this.socket = CreateSocket(endPoint);
             this.socket.Connect(endPoint);
             this.socket.Blocking = true;
+            this.endPoint = endPoint;
+        }
+
+        /// <inheritdoc/>
+        public void Reconnect()
+        {
+            if (this.socket.Connected)
+            {
+                // Already connected - nothing to do.
+                return;
+            }
+
+            this.socket = CreateSocket(this.endPoint);
+            this.Connect(this.endPoint);
         }
 
         /// <inheritdoc/>
@@ -101,9 +104,35 @@ namespace SharpAdbClient
         }
 
         /// <inheritdoc/>
-        public Task<int> ReceiveAsync(byte[] buffer, int offset, int size, SocketFlags socketFlags)
+        public Task<int> ReceiveAsync(byte[] buffer, int offset, int size, SocketFlags socketFlags, CancellationToken cancellationToken)
         {
-            return this.socket.ReceiveAsync(buffer, offset, size, socketFlags);
+            return this.socket.ReceiveAsync(buffer, offset, size, socketFlags, cancellationToken);
+        }
+
+        /// <summary>
+        /// Creates a new, uninitialized socket which can connect to an ADB server.
+        /// </summary>
+        /// <param name="endPoint">
+        /// The <see cref="EndPoint"/> to which to connect. Currently <see cref="IPEndPoint"/>, <see cref="DnsEndPoint"/>
+        /// and <see cref="UnixEndPoint"/> endpoint types are supported.
+        /// </param>
+        /// <returns>
+        /// A new <see cref="Socket"/> which can connect to an ADB server.
+        /// </returns>
+        internal static Socket CreateSocket(EndPoint endPoint)
+        {
+            if (endPoint is IPEndPoint || endPoint is DnsEndPoint)
+            {
+                return new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            }
+            else if (endPoint is UnixEndPoint)
+            {
+                return new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.IP);
+            }
+            else
+            {
+                throw new NotSupportedException("Only Windows, Linux and Mac OS are supported");
+            }
         }
     }
 }

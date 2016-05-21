@@ -70,7 +70,7 @@ namespace SharpAdbClient
         /// The device on which to interact with the files.
         /// </param>
         public SyncService(DeviceData device)
-            : this(Factories.AdbSocketFactory(AdbServer.EndPoint), device)
+            : this(Factories.AdbSocketFactory(AdbServer.Instance.EndPoint), device)
         {
         }
 
@@ -216,6 +216,11 @@ namespace SharpAdbClient
                 if (response == SyncCommand.DONE)
                 {
                     break;
+                }
+                else if (response == SyncCommand.FAIL)
+                {
+                    var message = this.Socket.ReadSyncString();
+                    throw new AdbException($"Failed to pull '{remoteFilepath}'. {message}");
                 }
                 else if (response != SyncCommand.DATA)
                 {
